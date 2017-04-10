@@ -1,0 +1,330 @@
+##Sass入门
+
+1、环境安装
+先安装Ruby环境，然后再Ruby命令行里执行“gem install sass”(注意mac需要加sudo)
+通过sass -v查看是否安装成功
+
+2、命令编译
+单文件编译   sass <要编译的Sass文件路径>/style.scss:<要输出的css文件路径>/style.css
+
+多个文件编译  sass sass/:css/   --表示将项目中的“sass”文件夹中所有“.scss”文件编译成“.css”文件，并将这些css文件都放在项目的“css”文件夹中。
+
+通过开启watch检测功能，可以自动检测到代码的变化，并且自动编译出来    sass --watch <要编译的Sass文件路径>/style.scss:<要输出CSS文件路径>/style.css
+
+3、使用Gulp配置Sass编译的示例代码
+
+var gulp = require('gulp');
+var sass = require('gulp-sass');
+
+gulp.task('sass', function(){
+    gulp.src('./scss/*.scss')
+    .pipe(sass())
+    .pipe(gulp.dest('./css'));
+});
+
+gulp.task('watch', function(){
+    gulp.watch('scss/*.scss', ['sass']);
+});
+
+gulp.task('default', ['sass', 'watch']);
+
+4、sass不同样式风格的输出方法
+a.嵌套输出方式 nested   在编译的时候带上参数  "--style nested"
+sass --watch test.scss:test.css  --style nested
+
+b.展开输出方式 expanded  在编译的时候带上参数 "--style expanded",输出风格和nested类似，只是大括号另起一行
+sass --watch test.scss:test.css  --style expanded
+
+
+c.紧凑输出方式 compact   在编译时候带上参数 "--style compact",输出风格是单行的css
+sass --watch test.scss:test.css  -style compact
+
+
+d.压缩输出方式 compressed  在编译的时候带上参数 "--style compressed" 输出方式会去掉标准的Sass和CSS注释及空格，也就是压缩好的CSS代码样式风格。
+
+5.Sass语法
+
+  5.1声明变量 
+  $width: 300px  Sass变量包括三个部分：a.声明变量的符号"$" b.变量名称width c.赋予变量的值300px
+  注意：如果加上!default则表示默认值,以后可以根据需要来进行覆盖，只要在默认变量之前重新声明下变量即可
+  例如：$width: 300px !default;
+
+  5.2局部变量和全局变量
+  定义在元素外面的变量是全局变量；定义在元素内部的变量是局部变量，局部变量只会在局部范围内覆盖全局变量。
+  
+  //SCSS
+  $color: orange !default;//定义全局变量
+  .block {
+    color: $color;//调用全局变量
+  }
+  em {
+    $color: red;//定义局部变量（全局变量 $color 的影子）
+    a {
+      color: $color;//调用局部变量
+    }
+  }
+  
+  5.3选择器嵌套
+  有三种：选择器嵌套、属性嵌套、伪类嵌套
+  a.选择器嵌套
+  
+  nav {
+    a {
+      color: red;
+
+      header & {
+        color:green;
+      }
+    }  
+  }
+  编译出来结果:
+  nav a {
+    color:red;
+  }
+
+  header nav a {
+    color:green;
+  }
+  
+  b.属性嵌套,css有一些属性前缀相同，只是后缀不同，此时可以通过属性嵌套简化代码
+  比如：
+  .box {
+    border: {
+     top: 1px solid red;
+     bottom: 1px solid green;
+    }
+  }
+  编译：
+  .box {
+    border-top: 1px solid red;
+    border-bottom: 1px solid green;
+  }
+  
+  c.伪类嵌套，伪类嵌套和属性嵌套类似，只不过需要借助'&'符号一起配合使用。
+  比如：
+  .clearfix{
+    &:before{
+      content:"";
+      display: table;
+    }
+  }
+  编译：
+  .clearfix:before{
+      content:"";
+      display: table;
+  }
+  ps:***尽量避免选择器嵌套。
+
+  5.4混合宏
+  使用"@mixin"来声明一个混合宏，可以带参数，例如：
+  @mixin border-radius($radius:5px){
+    -webkit-border-radius: $radius;
+    border-radius: $radius;
+  }
+
+  使用关键字"@include"来调用声明好的混合宏，比如：
+  button {
+    @include border-radius;  //还可以写成 "@include border-radius(5px)",这时5px会覆盖3px。
+  }
+  编译结果就是：
+  button {
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+  }
+  
+  混合宏可以传递多个参数，当混合宏传的参数过多时可以使用"..."替代，比如：
+  @mixin box-shadow($shadows...){
+    @if length($shadows) >= 1 {
+      -webkit-box-shadow: $shadows;
+      box-shadow: $shadows;
+    } @else {
+      $shadows: 0 0 2px rgba(#000,.25);
+      -webkit-box-shadow: $shadow;
+      box-shadow: $shadow;
+    }
+  }
+
+  5.5扩展和继承
+  Sass中通过关键词"@extend"来继承已存在的类样式，比如：
+  .btn {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .btn-primary {
+    background-color: #f36;
+    color: #fff;
+    @extend .btn;
+  }
+
+  编译：
+  .btn, .btn-primary  {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .btn-primary {
+    background-color: #f36;
+    color: #fff;
+  }
+
+  5.6 占位符%placeholder
+  Sass中的占位符 %placeholder功能是一个很强大、很实用的功能，因为 %placeholder声明的代码如果不被 @extend调用的话，不会产生任何代码，
+  并且编译出的代码会将相同的部分合并在一起。
+  %mt5 {
+    margin-top: 5px;
+  }
+  %pt5{
+    padding-top: 5px;
+  }
+
+  .btn {
+    @extend %mt5;
+    @extend %pt5;
+  }
+
+  .block {
+    @extend %mt5;
+
+    span {
+      @extend %pt5;
+    }
+  }
+  编译的结果：
+  .btn, .block {
+    margin-top: 5px;
+  }
+
+  .btn, .block span {
+    padding-top: 5px;
+  }
+
+  5.7混合宏、继承、占位符比较
+  a.混合宏优点是可以传递参数，可以使用混合宏创建相同代码，但是不会自动合并相同样式代码
+  b.继承和占位符在编译时都会合并相同样式代码，但是不可以传递参数；
+  c.继承和占位符区别是“占位符是独立定义，不调用的时候是不会在css中产生任何代码，继承是首先有一个基类存在，不管调用不调用，基类代码都会出现在编译出的css代码中”
+
+  5.8插值#{}
+  $properties: (margin, padding);
+  @mixin set-value($side, $value) {
+    @each $prop in $properties {
+        #{$prop}-#{$side}: $value;
+    }
+  }
+  .login-box {
+    @include set-value(top, 14px);
+  }
+  编译出结果：
+  .login-box {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  还可以使用 @extend插值
+  %updated-status {
+    margin-top: 20px;
+    background: #F00;
+  }
+  .selected-status {
+    font-weight: bold;
+  }
+  $flag: "status";
+  .navigation {
+    @extend %updated-#{$flag};
+    @extend .selected-#{$flag};
+  }
+  编译出来结果：
+  .navigation {
+    margin-top: 20px;
+    background: #F00;
+  }
+  .selected-status, .navigation {
+    font-weight: bold;
+  }
+
+  5.9注释 
+  在Sass中有两种注释，
+  a.类似css的注释方式，使用‘/*’开头，结尾使用‘*/’，编译出的css会显示
+  b.类似JavaScript的注释方式，使用“//”，编译出的css不会显示
+
+  5.10 sass支持的类型
+  a.字符串类型，有引号字符串和无引号字符串
+  b.值列表，通过空格或者逗号分隔的一系列的值
+
+  5.11 sass运算
+  a.加法，在变量或属性中都可以做加法运算，但是不同单位运算比如px和em会报错。如：
+  .box {
+    width: 20px + 8in;
+  }
+  编译出来：
+  .box {
+    width: 788px;
+  }
+  b.减法，同加法，运算碰到不同类型的单位时，编译会报错。
+  c.乘法，进行乘法运算时，两个值单位相同时，只需要为一个数量提供单位即可(两个相同单位会出现错误，比如10px * 2px)，如下：
+  .box {
+    width: 10px * 2;
+  }
+  编译出来：
+  .box {
+    width: 20px;
+  }
+  d.除法，使用“/”做除法运算时一定要加（），如下：
+  .box {
+    width: (100px / 2);  
+  }
+  编译出来结果：
+  .box {
+    width: 50px;
+  }
+  如果“/”符号在已有的数学表达式中，也会被认作除法符号，如下：
+  .box {
+    width: 100px / 2 + 2in;  
+  }
+  另外当变量进行除法运算时，“/”符号也会被自动识别成除法。
+
+  综合上述，”/  ”符号被当作除法运算符时有以下几种情况：
+
+   如果数值或它的任意部分是存储在一个变量中或是函数的返回值。
+   如果数值被圆括号包围。
+   如果数值是另一个数学表达式的一部分。
+  例外：除法运算时，如果两个值带有相同的单位值时，除法运算之后会得到一个不带单位的数值，1000px/100px值是10.
+
+  e.颜色运算
+  颜色运算是分段运算的，也就是说红、绿和蓝色分段单独进行运算。比如：
+  color: #010203 + #040506; 其实就是01+04=05,02+05=07，03+06=09，最后得到color: #050709;
+
+  h.字符运算
+  通过加法符号"+"来对字符串进行连接，引号的位置不同结果不同，如下：
+  p:before {
+    content: "Foo " + Bar;
+    font-family: sans- + "serif";
+  }
+  编译结果：
+  p:before {
+    content: "Foo Bar";
+    font-family: sans-serif; 
+  }
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
